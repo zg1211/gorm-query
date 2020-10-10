@@ -3,7 +3,7 @@ package query
 import (
 	"fmt"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Query struct {
@@ -104,18 +104,18 @@ type Paginator interface {
 }
 
 type paginator struct {
-	per, page uint32
+	per, page int
 }
 
 type Pagination struct {
-	Per        uint32
-	Page       uint32
-	TotalPage  uint32
-	TotalCount uint32
+	Per        int
+	Page       int
+	TotalPage  int64
+	TotalCount int64
 	HasMore    bool
 }
 
-func NewPaginator(per, page uint32) *paginator {
+func NewPaginator(per, page int) *paginator {
 	return &paginator{
 		per:  per,
 		page: page,
@@ -123,11 +123,11 @@ func NewPaginator(per, page uint32) *paginator {
 }
 
 func (p *paginator) Page(db *gorm.DB, data interface{}) (*Pagination, error) {
-	if p.per == 0 || p.page == 0 {
+	if p.per <= 0 || p.page <= 0 {
 		return nil, fmt.Errorf("Invalid Per: %d, Page: %d", p.per, p.page)
 	}
 
-	var totalCount, totalPage uint32
+	var totalCount, totalPage int64
 	if err := db.Count(&totalCount).Error; err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (p *paginator) Page(db *gorm.DB, data interface{}) (*Pagination, error) {
 	if totalCount == 0 {
 		totalPage = 0
 	} else {
-		totalPage = (totalCount-1)/p.per + 1
+		totalPage = (totalCount-1)/int64(p.per) + 1
 	}
 
 	return &Pagination{
@@ -147,6 +147,6 @@ func (p *paginator) Page(db *gorm.DB, data interface{}) (*Pagination, error) {
 		Page:       p.page,
 		TotalCount: totalCount,
 		TotalPage:  totalPage,
-		HasMore:    totalPage > p.page,
+		HasMore:    totalPage > int64(p.page),
 	}, nil
 }
